@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>WuWa Palette: Complete Edition</title>
+    <style>
+        :root {
+            --bg-color: #0c0e12;
+            --panel-color: #15181e;
+            --text-color: #e0e0e0;
+            --accent-color: #d4c07b;
+            --tile-size: 42px;
+            --grid-gap: 3px;
+            
+            --c-red: #c94f4f;
+            --c-yellow: #eadd7d;
+            --c-green: #5aafa3;
+            --c-blue: #4a7ab5;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            background-image: radial-gradient(circle at 50% 50%, #1a1e26 0%, #0c0e12 100%);
+            color: var(--text-color);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            height: 100vh; margin: 0; user-select: none;
+            overflow: hidden;
+        }
+
+        /* --- Header --- */
+        .header-ui {
+            width: 100%; max-width: 460px;
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 15px; padding: 0 5px; box-sizing: border-box;
+        }
+
+        .left-header { display: flex; align-items: center; gap: 10px; }
+
+        .settings-btn {
+            background: transparent; border: 1px solid #444; color: #888;
+            width: 32px; height: 32px; border-radius: 50%;
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            font-size: 18px; transition: 0.2s;
+        }
+        .settings-btn:hover { border-color: var(--accent-color); color: var(--accent-color); transform: rotate(45deg); }
+
+        .title {
+            font-size: 1.1rem; color: var(--accent-color); font-weight: 600;
+            letter-spacing: 0.5px; display: flex; align-items: center; gap: 8px;
+        }
+
+        .moves-container {
+            display: flex; align-items: center; gap: 8px;
+            background: rgba(0,0,0,0.4); padding: 5px 12px;
+            border-radius: 20px; border: 1px solid #333;
+        }
+
+        .moves-display {
+            font-size: 1.2rem; font-weight: bold; color: var(--accent-color);
+            min-width: 25px; text-align: center;
+        }
+
+        .add-moves-btn {
+            background: transparent; border: 1px solid #555; color: #888;
+            width: 24px; height: 24px; border-radius: 50%;
+            cursor: pointer; font-size: 14px;
+            display: flex; align-items: center; justify-content: center;
+            transition: 0.2s;
+        }
+        .add-moves-btn:hover { color: #fff; border-color: #fff; background: rgba(255,255,255,0.1); }
+
+        /* --- Board --- */
+        .game-wrapper {
+            position: relative; padding: 6px;
+            border: 1px solid #333; border-radius: 10px;
+            background: rgba(20, 23, 30, 0.9);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.7);
+        }
+
+        .game-wrapper::before {
+            content: ''; position: absolute; left: -8px; top: 20px; bottom: 20px;
+            width: 4px; background: var(--c-blue); border-radius: 4px;
+            box-shadow: 0 0 10px var(--c-blue); opacity: 0.7;
+        }
+
+        #grid {
+            display: grid;
+            grid-template-columns: repeat(10, var(--tile-size));
+            grid-template-rows: repeat(8, var(--tile-size));
+            grid-gap: var(--grid-gap);
+            background-color: #000; padding: 4px; border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .tile {
+            width: 100%; height: 100%; border-radius: 3px;
+            transition: background-color 0.2s; position: relative;
+        }
+        
+        .tile.hint-target::after {
+            content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 40%; height: 40%; background: #fff; border-radius: 50%;
+            box-shadow: 0 0 10px #fff; animation: pulse-dot 0.8s infinite alternate; pointer-events: none;
+        }
+        @keyframes pulse-dot { from { opacity: 0.5; transform: translate(-50%, -50%) scale(0.8); } to { opacity: 1; transform: translate(-50%, -50%) scale(1.2); } }
+
+        /* --- Controls --- */
+        .controls-area {
+            display: flex; align-items: center; justify-content: space-between;
+            width: 100%; max-width: 460px; margin-top: 15px; gap: 10px;
+        }
+
+        .palette-container {
+            flex-grow: 1; display: flex; justify-content: center; gap: 10px;
+            background: rgba(0,0,0,0.3); padding: 8px 12px;
+            border-radius: 30px; border: 1px solid #333;
+        }
+
+        .color-btn {
+            width: 42px; height: 42px;
+            border: 2px solid rgba(255,255,255,0.1);
+            border-radius: 50%; cursor: pointer; transition: 0.1s; position: relative;
+        }
+
+        .color-btn:active { transform: scale(0.9); }
+        .color-btn.selected { transform: scale(1.1); border-color: #fff; box-shadow: 0 0 15px currentColor; }
+        .color-btn.hint-active { animation: shake 0.4s ease-in-out infinite; border-color: #fff; }
+        @keyframes shake { 0%, 100% {transform: translateX(0);} 25% {transform: translateX(-2px);} 75% {transform: translateX(2px);} }
+
+        .side-btn {
+            background: #222; border: 1px solid #444; color: #aaa;
+            width: 42px; height: 42px; border-radius: 10px; cursor: pointer;
+            font-size: 1.2rem; display: flex; align-items: center; justify-content: center;
+            transition: 0.2s;
+        }
+        .side-btn:hover { border-color: var(--accent-color); color: var(--accent-color); background: #2a2a2a; }
+        .side-btn:active { transform: translateY(2px); }
+        .side-btn:disabled { opacity: 0.3; cursor: not-allowed; border-color: #333; transform: none; }
+
+        .target-bar {
+            margin-top: 8px; font-size: 0.9rem; color: #888;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .target-dot { width: 12px; height: 12px; border-radius: 50%; box-shadow: 0 0 5px currentColor; }
+
+        /* --- Settings Modal --- */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.8); backdrop-filter: blur(4px);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 300; 
+            visibility: hidden; opacity: 0; transition: 0.2s;
+        }
+        .modal-overlay.show { visibility: visible; opacity: 1; }
+
+        .settings-box {
+            background: #1a1d24; border: 1px solid #444; border-radius: 12px;
+            padding: 20px 30px; width: 300px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            display: flex; flex-direction: column; gap: 20px;
+            pointer-events: auto;
+        }
+
+        .settings-header {
+            font-size: 1.2rem; color: var(--accent-color); font-weight: bold;
+            text-transform: uppercase; border-bottom: 1px solid #333; padding-bottom: 10px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+
+        .close-btn { background: none; border: none; color: #666; cursor: pointer; font-size: 1.2rem; padding: 5px; }
+        .close-btn:hover { color: #fff; }
+
+        .volume-control { display: flex; flex-direction: column; gap: 8px; }
+        .volume-label { font-size: 0.9rem; color: #aaa; display: flex; justify-content: space-between; }
+        
+        input[type=range] {
+            -webkit-appearance: none; width: 100%; background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none; height: 16px; width: 16px; border-radius: 50%;
+            background: var(--accent-color); cursor: pointer; margin-top: -6px;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%; height: 4px; cursor: pointer; background: #333; border-radius: 2px;
+        }
+
+        /* --- Game Over Overlay --- */
+        .game-over-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.92); backdrop-filter: blur(8px);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 100; visibility: hidden; opacity: 0; transition: 0.3s;
+        }
+        .game-over-overlay.show { visibility: visible; opacity: 1; }
+
+        .play-btn {
+            background: var(--accent-color); color: #1a1d24;
+            border: none; padding: 12px 40px; font-size: 1.1rem; font-weight: 700;
+            cursor: pointer; clip-path: polygon(10% 0, 100% 0, 100% 100%, 0% 100%);
+            transition: transform 0.2s; margin-top: 20px;
+        }
+        .play-btn:hover { transform: scale(1.05); background: #fff; }
+
+        .loader {
+            width: 18px; height: 18px; border: 2px solid #555;
+            border-top-color: var(--accent-color); border-radius: 50%;
+            animation: spin 0.8s infinite linear; display: none;
+        }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        /* Colors */
+        .bg-red { background-color: var(--c-red); }
+        .bg-yellow { background-color: var(--c-yellow); }
+        .bg-green { background-color: var(--c-green); }
+        .bg-blue { background-color: var(--c-blue); }
+
+    </style>
+</head>
+<body>
+
+    <div class="header-ui">
+        <div class="left-header">
+            <button class="settings-btn" onclick="game.toggleSettings()" title="Settings">⚙</button>
+            
+            <div class="title">
+                <div id="spinner" class="loader"></div>
+                <span>OMNI-SOLVER</span>
+            </div>
+        </div>
+        
+        <div class="moves-container">
+            <span>Moves:</span>
+            <span id="moves-display" class="moves-display">--</span>
+            <button class="add-moves-btn" onclick="game.addMoves()" title="+1 Move">+</button>
+        </div>
+    </div>
+
+    <div class="game-wrapper">
+        <div id="grid"></div>
+    </div>
+
+    <div class="target-bar">
+        Target: <div id="target-dot" class="target-dot bg-blue"></div> 
+        <span id="target-text" style="color: var(--c-blue)">Blue</span>
+    </div>
+
+    <div class="controls-area">
+        <div style="display: flex; gap: 8px;">
+            <button class="side-btn" id="btn-undo" onclick="game.undo()" title="Undo" disabled>↶</button>
+            <button class="side-btn" id="btn-reset" onclick="game.resetLevel()" title="Reset Level">⟲</button>
+        </div>
+
+        <div class="palette-container" id="palette"></div>
+        
+        <div style="display: flex; gap: 8px;">
+            <button class="side-btn" id="btn-hint" onclick="game.getHint()" title="Omni-Hint">💡</button>
+            <button class="side-btn" onclick="game.init()" title="Skip / New Puzzle">↻</button>
+        </div>
+    </div>
+
+    <div id="settings-modal" class="modal-overlay">
+        <div class="settings-box">
+            <div class="settings-header">
+                <span>Audio Settings</span>
+                <button class="close-btn" onclick="game.toggleSettings()">✕</button>
+            </div>
+            
+            <div class="volume-control">
+                <div class="volume-label">
+                    <span>Music Volume</span>
+                    <span id="bgm-val">25%</span>
+                </div>
+                <input type="range" min="0" max="100" value="25" id="bgm-slider" oninput="game.updateVolume('bgm', this.value)">
+            </div>
+
+            <div class="volume-control">
+                <div class="volume-label">
+                    <span>SFX Volume</span>
+                    <span id="sfx-val">80%</span>
+                </div>
+                <input type="range" min="0" max="100" value="80" id="sfx-slider" oninput="game.updateVolume('sfx', this.value)">
+            </div>
+        </div>
+    </div>
+
+    <div id="overlay" class="game-over-overlay">
+        <h1 style="color: white; margin: 0; font-size: 2.5rem;" id="ov-title">SOLVED</h1>
+        <p style="color: #aaa; font-family: monospace;" id="ov-sub">Optimal Path Found</p>
+        <button id="overlay-btn" class="play-btn" onclick="game.handleOverlayClick()">NEXT PUZZLE</button>
+    </div>
+
+    <script>
+        const COLS = 10;
+        const ROWS = 8;
+        const COLORS = [
+            { name: 'Red', class: 'bg-red', code: '#c94f4f' },
+            { name: 'Yellow', class: 'bg-yellow', code: '#eadd7d' },
+            { name: 'Green', class: 'bg-green', code: '#5aafa3' },
+            { name: 'Blue', class: 'bg-blue', code: '#4a7ab5' }
+        ];
+
+        // --- DEBUG AUDIO ENGINE ---
+        class SoundEngine {
+            constructor() {
+                // Check if browser supports Web Audio
+                const AudioCtor = window.AudioContext || window.webkitAudioContext;
+                if (!AudioCtor) {
+                    alert("Error: Your browser does not support Web Audio API.");
+                    return;
+                }
+
+                this.ctx = new AudioCtor();
+                this.bgmVol = 0.25;
+                this.sfxVol = 0.8;
+                
+                // BGM Setup
+                this.bgm = new Audio('assets/bgm2.mp3'); 
+                this.bgm.loop = true;
+                this.updateBGMVolume();
+
+                this.buffers = {}; 
+                this.isLoaded = false;
+                this.isMusicPlaying = false;
+                
+                console.log("Audio Engine Initialized. Context State:", this.ctx.state);
+            }
+
+            async loadSFX() {
+                if (this.isLoaded) return;
+                console.log("Starting to load SFX...");
+
+                const fileMap = {
+                    click: 'assets/click.mp3',
+                    flood: 'assets/flood.mp3',
+                    win:   'assets/win.mp3',
+                    lose:  'assets/lose.mp3',
+                    hint:  'assets/hint.mp3'
+                };
+
+                const promises = Object.entries(fileMap).map(async ([key, path]) => {
+                    try {
+                        const res = await fetch(path);
+                        if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
+                        const arrayBuffer = await res.arrayBuffer();
+                        
+                        // Decode audio
+                        this.buffers[key] = await this.ctx.decodeAudioData(arrayBuffer);
+                        console.log(`✅ Loaded: ${key} (${path})`);
+                    } catch (e) { 
+                        console.error(`❌ FAILED to load ${path}:`, e); 
+                    }
+                });
+
+                await Promise.all(promises);
+                this.isLoaded = true;
+                console.log("SFX Loading Complete. Buffers available:", Object.keys(this.buffers));
+            }
+
+            playBuffer(name) {
+                // DEBUGGING LOGIC
+                if (!this.buffers[name]) {
+                    console.warn(`⚠️ Cannot play '${name}': Buffer not found. Did it fail to load?`);
+                    return;
+                }
+                
+                // Resume context if suspended (Browser Auto-play Policy)
+                if (this.ctx.state === 'suspended') {
+                    this.ctx.resume().then(() => {
+                        console.log("AudioContext Resumed by user interaction.");
+                    });
+                }
+
+                const source = this.ctx.createBufferSource();
+                source.buffer = this.buffers[name];
+                
+                const gain = this.ctx.createGain();
+                gain.gain.value = this.sfxVol;
+                
+                source.connect(gain);
+                gain.connect(this.ctx.destination);
+                
+                source.start(0);
+                // console.log(`Playing SFX: ${name}`); // Uncomment to spam console with clicks
+            }
+
+            // --- Mappings ---
+            playSelect() { this.playBuffer('click'); }
+            playFlood()  { this.playBuffer('flood'); }
+            playUndo()   { this.playBuffer('click'); } 
+            playWin()    { this.playBuffer('win'); }
+            playLose()   { this.playBuffer('lose'); }
+            playHint()   { this.playBuffer('hint'); }
+
+            setBGMVolume(val) { this.bgmVol = val / 100; this.updateBGMVolume(); }
+            updateBGMVolume() { this.bgm.volume = Math.max(0, Math.min(1, this.bgmVol)); }
+            setSFXVolume(val) { this.sfxVol = val / 100; }
+            
+            startMusic() {
+                if (!this.isMusicPlaying && this.bgmVol > 0) {
+                    this.bgm.play()
+                        .then(() => { 
+                            this.isMusicPlaying = true; 
+                            console.log("BGM Started");
+                        })
+                        .catch(e => {
+                            // This is expected if user hasn't clicked yet
+                        });
+                }
+            }
+        }
+
+        class OmniSolverGame {
+            constructor() {
+                this.grid = [];
+                this.initialGrid = []; // To store original state
+                this.initialMoves = 0; // To store original moves
+                this.history = [];
+                this.selectedColor = 3; 
+                this.targetColorIdx = 3;
+                this.movesLeft = 0;
+                this.isGameOver = false;
+                this.winState = false; // Track if game ended in win or loss
+
+                this.gridEl = document.getElementById('grid');
+                this.movesEl = document.getElementById('moves-display');
+                this.paletteEl = document.getElementById('palette');
+                this.overlay = document.getElementById('overlay');
+                this.spinner = document.getElementById('spinner');
+                this.settingsModal = document.getElementById('settings-modal');
+                this.overlayBtn = document.getElementById('overlay-btn');
+                
+                this.sound = new SoundEngine();
+
+                this.setupPalette();
+                this.init();
+            }
+
+            setupPalette() {
+                this.paletteEl.innerHTML = '';
+                COLORS.forEach((c, idx) => {
+                    const b = document.createElement('div');
+                    b.className = `color-btn ${c.class}`;
+                    b.id = `p-btn-${idx}`;
+                    b.onclick = () => this.selectColor(idx);
+                    this.paletteEl.appendChild(b);
+                });
+            }
+
+            async init() {
+                this.overlay.classList.remove('show');
+                this.spinner.style.display = 'block';
+                this.isGameOver = false;
+                this.history = [];
+                document.getElementById('btn-undo').disabled = true;
+
+                if (this.sound.ctx.state === 'suspended') this.sound.ctx.resume();
+                await this.sound.loadSFX();
+
+                let valid = false;
+                let attempts = 0;
+
+                while (!valid && attempts < 10) {
+                    this.generateRandomGrid();
+                    this.targetColorIdx = Math.floor(Math.random() * 4);
+                    const solution = this.aiSolve(this.grid, this.targetColorIdx);
+                    
+                    if (solution.moves >= 6 && solution.moves <= 14) {
+                        this.movesLeft = solution.moves;
+                        valid = true;
+                    }
+                    attempts++;
+                }
+                if(!valid) this.movesLeft = 8; 
+
+                // --- SAVE INITIAL STATE FOR RESET ---
+                this.initialGrid = this.cloneGrid(this.grid);
+                this.initialMoves = this.movesLeft;
+                // ------------------------------------
+
+                this.spinner.style.display = 'none';
+                this.updateUI();
+                this.renderGrid();
+                this.selectColor(this.selectedColor, true);
+            }
+
+            // --- RESET LOGIC ---
+            resetLevel() {
+                if(this.isGameOver) {
+                    this.overlay.classList.remove('show');
+                }
+                this.sound.playSelect();
+                
+                // Restore state
+                this.grid = this.cloneGrid(this.initialGrid);
+                this.movesLeft = this.initialMoves;
+                this.isGameOver = false;
+                this.history = []; // Clear undo history
+                
+                // Reset UI
+                document.getElementById('btn-undo').disabled = true;
+                this.renderGrid();
+                this.updateUI();
+            }
+
+            // --- OVERLAY LOGIC ---
+            handleOverlayClick() {
+                if (this.winState) {
+                    this.init(); // Next Puzzle
+                } else {
+                    this.resetLevel(); // Retry
+                }
+            }
+
+            toggleSettings() {
+                this.settingsModal.classList.toggle('show');
+            }
+
+            updateVolume(type, val) {
+                if (type === 'bgm') {
+                    this.sound.setBGMVolume(val);
+                    document.getElementById('bgm-val').innerText = val + '%';
+                    if (val > 0) this.sound.startMusic();
+                } else {
+                    this.sound.setSFXVolume(val);
+                    document.getElementById('sfx-val').innerText = val + '%';
+                    if(Math.random() > 0.8) this.sound.playSelect(); 
+                }
+            }
+
+            generateRandomGrid() {
+                this.grid = [];
+                for(let r=0; r<ROWS; r++) {
+                    let row = [];
+                    for(let c=0; c<COLS; c++) {
+                        row.push(Math.floor(Math.random() * 4));
+                    }
+                    this.grid.push(row);
+                }
+            }
+
+            aiSolve(startGrid, target) {
+                let queue = [{ grid: this.cloneGrid(startGrid), moves: 0, firstAction: null }];
+                const visited = new Set();
+                const BEAM_WIDTH = 25; 
+
+                for(let depth = 0; depth < 12; depth++) {
+                    let nextQueue = [];
+                    for(let state of queue) {
+                        if(this.checkWin(state.grid, target)) return { moves: state.moves, firstAction: state.firstAction };
+
+                        let h = this.hashGrid(state.grid);
+                        if(visited.has(h)) continue;
+                        visited.add(h);
+
+                        const clusters = this.getAllClusters(state.grid);
+
+                        for(let cluster of clusters) {
+                            if(cluster.tiles.length === 1 && clusters.length > 5) continue;
+                            const startColor = cluster.color;
+                            
+                            for(let c=0; c<4; c++) {
+                                if(c === startColor) continue;
+                                if (!cluster.neighbors.has(c) && clusters.length > 1) continue;
+
+                                let nextGrid = this.cloneGrid(state.grid);
+                                let tilesFilled = this.floodFillSim(nextGrid, cluster.anchor[0], cluster.anchor[1], startColor, c);
+
+                                let score = tilesFilled * 2; 
+                                if(c === target) score += 5; 
+
+                                nextQueue.push({
+                                    grid: nextGrid,
+                                    moves: state.moves + 1,
+                                    firstAction: state.firstAction || { r: cluster.anchor[0], c: cluster.anchor[1], color: c },
+                                    score: score
+                                });
+                            }
+                        }
+                    }
+                    nextQueue.sort((a,b) => b.score - a.score);
+                    queue = nextQueue.slice(0, BEAM_WIDTH);
+                    if(queue.length === 0) break;
+                }
+                return { moves: 99, firstAction: null };
+            }
+
+            getAllClusters(grid) {
+                let clusters = [];
+                let seen = new Set();
+                for(let r=0; r<ROWS; r++) {
+                    for(let c=0; c<COLS; c++) {
+                        let key = `${r},${c}`;
+                        if(seen.has(key)) continue;
+                        let color = grid[r][c];
+                        let cluster = { color: color, anchor: [r,c], tiles: [], neighbors: new Set() };
+                        let stack = [[r,c]];
+                        seen.add(key);
+                        while(stack.length) {
+                            let [cr, cc] = stack.pop();
+                            cluster.tiles.push([cr, cc]);
+                            [[cr+1,cc], [cr-1,cc], [cr,cc+1], [cr,cc-1]].forEach(([nr, nc]) => {
+                                if(nr>=0 && nr<ROWS && nc>=0 && nc<COLS) {
+                                    if(grid[nr][nc] === color) {
+                                        let nKey = `${nr},${nc}`;
+                                        if(!seen.has(nKey)) { seen.add(nKey); stack.push([nr, nc]); }
+                                    } else { cluster.neighbors.add(grid[nr][nc]); }
+                                }
+                            });
+                        }
+                        clusters.push(cluster);
+                    }
+                }
+                return clusters;
+            }
+
+            getHint() {
+                if(this.isGameOver) return;
+                this.sound.playHint();
+                const solution = this.aiSolve(this.grid, this.targetColorIdx);
+                if(solution && solution.firstAction) {
+                    const act = solution.firstAction;
+                    const btn = document.getElementById(`p-btn-${act.color}`);
+                    btn.classList.add('hint-active');
+                    setTimeout(() => btn.classList.remove('hint-active'), 1000);
+                    const tile = document.getElementById(`t-${act.r}-${act.c}`);
+                    tile.classList.add('hint-target');
+                    setTimeout(() => tile.classList.remove('hint-target'), 2000);
+                }
+            }
+
+            selectColor(idx, silent = false) {
+                this.selectedColor = idx;
+                COLORS.forEach((c, i) => {
+                    document.getElementById(`p-btn-${i}`).classList.toggle('selected', i===idx);
+                });
+                if (!silent) this.sound.playSelect();
+                
+                this.sound.startMusic();
+            }
+
+            handleTileClick(r, c) {
+                if(this.isGameOver || this.movesLeft <= 0) return;
+                
+                this.sound.startMusic();
+
+                const clickedColor = this.grid[r][c];
+                if(clickedColor === this.selectedColor) return;
+
+                this.history.push({ grid: this.cloneGrid(this.grid), moves: this.movesLeft });
+                document.getElementById('btn-undo').disabled = false;
+
+                this.sound.playFlood(); 
+                this.floodFillReal(r, c, clickedColor, this.selectedColor);
+                this.movesLeft--;
+                this.updateUI();
+
+                if(this.checkWin(this.grid, this.targetColorIdx)) {
+                    this.endGame(true);
+                } else if (this.movesLeft === 0) {
+                    this.endGame(false);
+                }
+            }
+
+            floodFillReal(sr, sc, oldC, newC) {
+                let stack = [[sr, sc]];
+                let visited = new Set();
+                while(stack.length) {
+                    let [r, c] = stack.pop();
+                    let key = `${r},${c}`;
+                    if(visited.has(key)) continue;
+                    visited.add(key);
+                    if(this.grid[r][c] === oldC) {
+                        this.grid[r][c] = newC;
+                        const t = document.getElementById(`t-${r}-${c}`);
+                        t.className = `tile ${COLORS[newC].class}`;
+                        [[r+1,c], [r-1,c], [r,c+1], [r,c-1]].forEach(([nr,nc]) => {
+                            if(nr>=0 && nr<ROWS && nc>=0 && nc<COLS) stack.push([nr,nc]);
+                        });
+                    }
+                }
+            }
+
+            floodFillSim(grid, sr, sc, oldC, newC) {
+                let stack = [[sr, sc]];
+                let visited = new Set();
+                let count = 0;
+                while(stack.length) {
+                    let [r, c] = stack.pop();
+                    let key = `${r},${c}`;
+                    if(visited.has(key)) continue;
+                    visited.add(key);
+                    if(grid[r][c] === oldC) {
+                        grid[r][c] = newC;
+                        count++;
+                        [[r+1,c], [r-1,c], [r,c+1], [r,c-1]].forEach(([nr,nc]) => {
+                            if(nr>=0 && nr<ROWS && nc>=0 && nc<COLS) stack.push([nr,nc]);
+                        });
+                    }
+                }
+                return count;
+            }
+
+            cloneGrid(g) { return g.map(r => [...r]); }
+            hashGrid(g) { return g.map(r => r.join('')).join(''); }
+            
+            checkWin(g, t) {
+                const first = g[0][0];
+                if(first !== t) return false;
+                for(let r=0; r<ROWS; r++) 
+                    for(let c=0; c<COLS; c++) 
+                        if(g[r][c] !== first) return false;
+                return true;
+            }
+
+            undo() {
+                if(!this.history.length) return;
+                this.sound.playUndo();
+                const s = this.history.pop();
+                this.grid = s.grid;
+                this.movesLeft = s.moves;
+                this.renderGrid();
+                this.updateUI();
+                if(!this.history.length) document.getElementById('btn-undo').disabled = true;
+            }
+
+            addMoves() {
+                this.sound.playSelect();
+                this.movesLeft += 1;
+                this.updateUI();
+            }
+
+            updateUI() {
+                this.movesEl.innerText = this.movesLeft;
+                this.movesEl.style.color = this.movesLeft <= 2 ? 'var(--c-red)' : 'var(--accent-color)';
+                const t = COLORS[this.targetColorIdx];
+                document.getElementById('target-dot').className = `target-dot ${t.class}`;
+                document.getElementById('target-text').innerText = t.name;
+                document.getElementById('target-text').style.color = t.code;
+            }
+
+            renderGrid() {
+                this.gridEl.innerHTML = '';
+                for(let r=0; r<ROWS; r++) {
+                    for(let c=0; c<COLS; c++) {
+                        const d = document.createElement('div');
+                        d.className = `tile ${COLORS[this.grid[r][c]].class}`;
+                        d.id = `t-${r}-${c}`;
+                        d.onclick = () => this.handleTileClick(r, c);
+                        this.gridEl.appendChild(d);
+                    }
+                }
+            }
+
+            endGame(win) {
+                this.isGameOver = true;
+                this.winState = win; // Store state for button logic
+                
+                if(win) this.sound.playWin();
+                else this.sound.playLose();
+                
+                this.overlay.classList.add('show');
+                const t = document.getElementById('ov-title');
+                const s = document.getElementById('ov-sub');
+                
+                t.innerText = win ? "DECODED" : "FAILED";
+                t.style.color = win ? "var(--c-green)" : "var(--c-red)";
+                s.innerText = win ? "Signal Clear" : "Out of Moves";
+
+                // Dynamic Button Text
+                this.overlayBtn.innerText = win ? "NEXT PUZZLE" : "TRY AGAIN";
+            }
+        }
+
+        const game = new OmniSolverGame();
+    </script>
+</body>
+</html>
