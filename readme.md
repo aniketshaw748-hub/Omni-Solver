@@ -4,7 +4,7 @@ A highly optimized web-based recreation of the "Overflowing Palette" mechanic, e
 
 ## 🎮 Play Online
 **[Live Demo Link Here]**
-*(Replace this with your Render or Netlify URL after deployment)*
+https://omni-solver.onrender.com
 
 ## ✨ Features
 
